@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cassette Pomodoro Timer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Google Font for the retro text -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+
+  <!-- React + ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+  <!-- Babel for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    function CassettePomodoro() {
+      const [minutes, setMinutes] = React.useState(25);
+      const [seconds, setSeconds] = React.useState(0);
+      const [isActive, setIsActive] = React.useState(false);
+      const [mode, setMode] = React.useState('work');
+      const [session, setSession] = React.useState(1);
+      const [totalSessions] = React.useState(4);
+      const [rotation, setRotation] = React.useState(0);
+
+      const audioRef = React.useRef(null);
+
+      React.useEffect(() => {
+        let interval = null;
+
+        if (isActive) {
+          interval = setInterval(() => {
+            setRotation(prev => prev + 10);
+
+            if (seconds === 0) {
+              if (minutes === 0) {
+                clearInterval(interval);
+                setIsActive(false);
+                handleTimerComplete();
+              } else {
+                setMinutes(prev => prev - 1);
+                setSeconds(59);
+              }
+            } else {
+              setSeconds(prev => prev - 1);
+            }
+          }, 1000);
+        } else if (!isActive && interval) {
+          clearInterval(interval);
+        }
+
+        return () => clearInterval(interval);
+      }, [isActive, minutes, seconds]);
+
+      const handleTimerComplete = () => {
+        if (audioRef.current) {
+          audioRef.current.play().catch(e => console.log('Audio play failed:', e));
+        }
+
+        if (mode === 'work') {
+          if (session === totalSessions) {
+            setMode('longBreak');
+            setMinutes(15);
+            setSeconds(0);
+            setSession(1);
+          } else {
+            setMode('break');
+            setMinutes(5);
+            setSeconds(0);
+            setSession(session + 1);
+          }
+        } else {
+          setMode('work');
+          setMinutes(25);
+          setSeconds(0);
+        }
+      };
+
+      const toggleTimer = () => {
+        setIsActive(!isActive);
+      };
+
+      const resetTimer = () => {
+        setIsActive(false);
+        if (mode === 'work') {
+          setMinutes(25);
+        } else if (mode === 'break') {
+          setMinutes(5);
+        } else {
+          setMinutes(15);
+        }
+        setSeconds(0);
+      };
+
+      const skipSession = () => {
+        setIsActive(false);
+        handleTimerComplete();
+      };
+
+      return (
+        <div style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)',
+          padding: '2rem',
+          fontFamily: '"Press Start 2P", monospace'
+        }}>
+          <audio ref={audioRef} src="data:audio/wav;base64,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" />
+
+          <div style={{ position: 'relative' }}>
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              background: '#9ca3af',
+              opacity: 0.3,
+              filter: 'blur(3rem)',
+              transform: 'translateY(1rem)'
+            }}></div>
+
+            {/* Cassette Body */}
+            <div style={{
+              position: 'relative',
+              background: 'linear-gradient(135deg, #ff6ec4 0%, #ff9ed8 100%)',
+              width: '500px',
+              height: '320px',
+              borderRadius: '12px',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.2), inset 0 -4px 8px rgba(0,0,0,0.1)',
+              border: '4px solid #7b2cbf',
+              overflow: 'hidden'
+            }}>
+              {/* Top label area */}
+              <div style={{
+                background: 'linear-gradient(180deg, #ffd6e8 0%, #ffe8f0 100%)',
+                height: '60px',
+                borderBottom: '3px solid #7b2cbf',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0 2rem',
+                position: 'relative'
+              }}>
+                <div style={{
+                  fontSize: '0.7rem',
+                  color: '#5a189a',
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase'
+                }}>
+                  {mode === 'work' ? '🍅 WORK TIME' : mode === 'break' ? '☕ BREAK' : '🌟 LONG BREAK'}
+                </div>
+
+                {/* Screws */}
+                {[0, 1].map(i => (
+                  <div key={i} style={{
+                    position: 'absolute',
+                    [i === 0 ? 'left' : 'right']: '1rem',
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '50%',
+                    background: '#c77dff',
+                    border: '2px solid #9d4edd',
+                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.2)'
+                  }}>
+                    <div style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      width: '6px',
+                      height: '1px',
+                      background: '#5a189a'
+                    }}></div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Main cassette area */}
+              <div style={{
+                padding: '2rem',
+                display: 'flex',
+                flexDirection: 'column',
+                height: 'calc(100% - 60px)'
+              }}>
+                {/* Reels and window */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '1.5rem',
+                  gap: '1.5rem'
+                }}>
+                  {/* Left Reel */}
+                  <div style={{
+                    width: '90px',
+                    height: '90px',
+                    borderRadius: '50%',
+                    background: '#240046',
+                    border: '4px solid #5a189a',
+                    position: 'relative',
+                    boxShadow: 'inset 0 4px 8px rgba(0,0,0,0.3), 0 2px 8px rgba(0,0,0,0.2)',
+                    transform: `rotate(${rotation}deg)`,
+                    transition: 'transform 0.3s linear'
+                  }}>
+                    {[0, 60, 120, 180, 240, 300].map(angle => (
+                      <div key={angle} style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        width: '30px',
+                        height: '4px',
+                        background: '#7b2cbf',
+                        transformOrigin: 'left center',
+                        transform: `rotate(${angle}deg)`
+                      }}></div>
+                    ))}
+                    <div style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '50%',
+                      background: '#10002b',
+                      border: '2px solid #3c096c'
+                    }}></div>
+                  </div>
+
+                  {/* Timer Window */}
+                  <div style={{
+                    flex: 1,
+                    background: 'rgba(36, 0, 70, 0.6)',
+                    borderRadius: '8px',
+                    padding: '1.5rem',
+                    border: '3px solid #5a189a',
+                    boxShadow: 'inset 0 4px 8px rgba(0,0,0,0.4)',
+                    backdropFilter: 'blur(10px)'
+                  }}>
+                    <div style={{
+                      textAlign: 'center',
+                      fontSize: '3rem',
+                      fontWeight: 'bold',
+                      color: '#06ffa5',
+                      fontFamily: '"Courier New", monospace',
+                      textShadow: '0 0 20px rgba(6, 255, 165, 0.6), 0 2px 4px rgba(0,0,0,0.8)',
+                      letterSpacing: '0.1em'
+                    }}>
+                      {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
+                    </div>
+                  </div>
+
+                  {/* Right Reel */}
+                  <div style={{
+                    width: '90px',
+                    height: '90px',
+                    borderRadius: '50%',
+                    background: '#240046',
+                    border: '4px solid #5a189a',
+                    position: 'relative',
+                    boxShadow: 'inset 0 4px 8px rgba(0,0,0,0.3), 0 2px 8px rgba(0,0,0,0.2)',
+                    transform: `rotate(${-rotation}deg)`,
+                    transition: 'transform 0.3s linear'
+                  }}>
+                    {[0, 60, 120, 180, 240, 300].map(angle => (
+                      <div key={angle} style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        width: '30px',
+                        height: '4px',
+                        background: '#7b2cbf',
+                        transformOrigin: 'left center',
+                        transform: `rotate(${angle}deg)`
+                      }}></div>
+                    ))}
+                    <div style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '50%',
+                      background: '#10002b',
+                      border: '2px solid #3c096c'
+                    }}></div>
+                  </div>
+                </div>
+
+                {/* Session indicator */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  marginBottom: '1rem'
+                }}>
+                  {[...Array(totalSessions)].map((_, i) => (
+                    <div key={i} style={{
+                      width: '28px',
+                      height: '8px',
+                      borderRadius: '4px',
+                      background: i < (mode === 'work' ? session - 1 : session) ? '#06ffa5' : 'rgba(255, 255, 255, 0.3)',
+                      boxShadow: i < (mode === 'work' ? session - 1 : session) ? '0 0 10px rgba(6, 255, 165, 0.6)' : 'none',
+                      border: '2px solid #5a189a',
+                      transition: 'all 0.3s'
+                    }}></div>
+                  ))}
+                </div>
+
+                {/* Control Buttons */}
+                <div style={{
+                  display: 'flex',
+                  gap: '0.75rem',
+                  justifyContent: 'center'
+                }}>
+                  <button onClick={toggleTimer} style={{
+                    background: 'linear-gradient(180deg, #ffd6e8 0%, #ffb3d9 100%)',
+                    border: '3px solid #7b2cbf',
+                    borderRadius: '8px',
+                    padding: '0.75rem 1.5rem',
+                    fontSize: '0.6rem',
+                    fontWeight: 'bold',
+                    color: '#5a189a',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 0 #5a189a, 0 6px 8px rgba(0,0,0,0.2)',
+                    transition: 'all 0.1s',
+                    fontFamily: '"Press Start 2P", monospace',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}
+                  onMouseDown={(e) => {
+                    e.target.style.transform = 'translateY(2px)';
+                    e.target.style.boxShadow = '0 2px 0 #5a189a, 0 4px 6px rgba(0,0,0,0.2)';
+                  }}
+                  onMouseUp={(e) => {
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = '0 4px 0 #5a189a, 0 6px 8px rgba(0,0,0,0.2)';
+                  }}>
+                    {isActive ? '⏸ PAUSE' : '▶ START'}
+                  </button>
+
+                  <button onClick={resetTimer} style={{
+                    background: 'linear-gradient(180deg, #ffd6e8 0%, #ffb3d9 100%)',
+                    border: '3px solid #7b2cbf',
+                    borderRadius: '8px',
+                    padding: '0.75rem 1.25rem',
+                    fontSize: '0.6rem',
+                    fontWeight: 'bold',
+                    color: '#5a189a',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 0 #5a189a, 0 6px 8px rgba(0,0,0,0.2)',
+                    transition: 'all 0.1s',
+                    fontFamily: '"Press Start 2P", monospace',
+                    textTransform: 'uppercase'
+                  }}
+                  onMouseDown={(e) => {
+                    e.target.style.transform = 'translateY(2px)';
+                    e.target.style.boxShadow = '0 2px 0 #5a189a, 0 4px 6px rgba(0,0,0,0.2)';
+                  }}
+                  onMouseUp={(e) => {
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = '0 4px 0 #5a189a, 0 6px 8px rgba(0,0,0,0.2)';
+                  }}>
+                    ↻ RESET
+                  </button>
+
+                  <button onClick={skipSession} style={{
+                    background: 'linear-gradient(180deg, #ffd6e8 0%, #ffb3d9 100%)',
+                    border: '3px solid #7b2cbf',
+                    borderRadius: '8px',
+                    padding: '0.75rem 1.25rem',
+                    fontSize: '0.6rem',
+                    fontWeight: 'bold',
+                    color: '#5a189a',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 0 #5a189a, 0 6px 8px rgba(0,0,0,0.2)',
+                    transition: 'all 0.1s',
+                    fontFamily: '"Press Start 2P", monospace',
+                    textTransform: 'uppercase'
+                  }}
+                  onMouseDown={(e) => {
+                    e.target.style.transform = 'translateY(2px)';
+                    e.target.style.boxShadow = '0 2px 0 #5a189a, 0 4px 6px rgba(0,0,0,0.2)';
+                  }}
+                  onMouseUp={(e) => {
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = '0 4px 0 #5a189a, 0 6px 8px rgba(0,0,0,0.2)';
+                  }}>
+                    ⏭ SKIP
+                  </button>
+                </div>
+              </div>
+
+              {/* Bottom screws */}
+              {[0, 1, 2, 3].map(i => (
+                <div key={i} style={{
+                  position: 'absolute',
+                  bottom: '1rem',
+                  [i < 2 ? 'left' : 'right']: i % 2 === 0 ? '1rem' : '3.5rem',
+                  width: '10px',
+                  height: '10px',
+                  borderRadius: '50%',
+                  background: '#c77dff',
+                  border: '2px solid #9d4edd',
+                  boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.2)'
+                }}>
+                  <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: '5px',
+                    height: '1px',
+                    background: '#5a189a'
+                  }}></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<CassettePomodoro />);
+  </script>
+</body>
+</html>
